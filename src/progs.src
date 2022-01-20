@@ -34,3 +34,5 @@ fish.qc			// registered
 shalrath.qc		// registered
 enforcer.qc		// registered
 oldone.qc		// registered
+
+entmod/entmod.qc
