@@ -2,7 +2,7 @@
 A Quake Enhanced mod to manipulate entities. Inspired by the Half-Life metamod plugin 'Entmod'
 Can be used standalone or easily implemented into another mod.
 
-** Note that the mod is very much not polished. Some commands don't work properly and there can be crashes if you don't know what you're doing**
+**Note that the mod is very much not polished. Some commands don't work properly and there can be crashes if you don't know what you're doing**
 
 ## How to use
 * Install the mod as you would any other mod
