@@ -1,54 +1,7 @@
-/*
-====
-Defs
-====
-*/
-enum {
-    ENTMOD_MODE_NONE,
-    ENTMOD_MODE_MOVING
-};
+#include "entmod_defs.qc"
+#include "entmod_macros.qc"
 
-enum {
-    ENTMOD_ATTACKINGMODE_NONE,
-    ENTMOD_ATTACKINGMODE_SELECT,
-    ENTMOD_ATTACKINGMODE_DRAG
-};
-
-enum {
-    ENTMOD_ENTITY_NORMAL,
-    ENTMOD_ENTITY_SUBENTITY,
-    ENTMOD_ENTITY_MARKED,
-};
-
-typedef struct {
-    float active;
-
-    float mode;
-    float attackingMode;
-    entity selectedEntity;
-    entity markedEntity;
-
-    float attacking;
-    float attackTime;
-    entity attackingOldOwner;
-
-    void() killOverride;
-    string killOverrideStringArgument;
-    float killOverrideFloatArgument;
-
-    vector lastSelectedPosition;
-
-    vector moverStartOrigin;
-    vector moveeStartOrigin;
-
-    float gridAligned;
-} entmod_t;
-
-entmod_t entmod;
-
-
-.entity entchain;
-
+#define ENTMOD_IMPULSE 80
 
 float() Entmod_Get_Command_Argument1 =
 {
@@ -275,7 +228,6 @@ void() Entmod_PlayerAttack_Think =
         return;
     }
 
-    dprint("Think\n");
 
     // Switch to drag mode
     if(entmod.attackingMode == ENTMOD_ATTACKINGMODE_SELECT && time >= entmod.attackTime + 0.25) {
@@ -330,11 +282,15 @@ float() Entmod_PlayerAttack =
 
 void() Entmod_Error_NoEntitySelected =
 {
-    sprint(self,"No entity is selected\n");
+    sprint(self,"Error: No entity is selected\n");
 }
 
 
 
+float(float commandId) Entmod_HandleCommand_Execute =
+{
+    return 0;
+}
 
 
 void() Entmod_Command_Activate =
@@ -353,184 +309,6 @@ void() Entmod_Command_Deactivate =
     sprint(self,"Entmod deactivated\n");
 }
 
-void() Entmod_Command_PrintEntity =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    eprint(entmod.selectedEntity);
-}
-
-
-void() Entmod_Command_GrabEntity =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    if(entmod.mode == ENTMOD_MODE_NONE) {
-        entmod.mode = ENTMOD_MODE_MOVING;
-        sprint(self,"Started moving entity\n");
-
-        entmod.moverStartOrigin = self.origin;
-        entmod.moveeStartOrigin = entmod.selectedEntity.origin;
-    }
-    else if(entmod.mode == ENTMOD_MODE_MOVING) {
-        entmod.mode = ENTMOD_MODE_NONE;
-        sprint(self,"Stopped moving entity\n");
-    }
-    else {
-        sprint(self,"Invalid mode\n");
-    }
-}
-
-void() Entmod_Command_Copy =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-
-    local string targetClass = entmod.selectedEntity.classname;
-    if(targetClass == "func_wall" || targetClass == "func_plat" || targetClass == "func_door" || targetClass == "func_button" || targetClass == "train")
-    {
-        local entity newEnt = spawn();
-        newEnt.origin = entmod.selectedEntity.origin;
-        newEnt.model = entmod.selectedEntity.model;
-        newEnt.classname = "func_wall";
-
-        local entity oself = self;
-        self = newEnt;
-        func_wall();
-        self = oself;
-
-        entmod.selectedEntity = newEnt;
-
-        sprint(self,"Entity copied into func_wall\n");
-    }
-}
-
-void() Entmod_Command_Rotate =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    entmod.selectedEntity.angles_y += 90;
-
-    sprint(self,"Entity rotated\n");
-}
-
-
-void() Entmod_Command_Remove =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    sprint(self,"Entity removed\n");
-
-    remove(entmod.selectedEntity);
-
-    entmod.selectedEntity = world;
-}
-
-void() Entmod_Command_Set_Alpha =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    entmod.selectedEntity.alpha = Entmod_Get_Command_Argument1();
-
-    sprint(self,"Entity toggled\n");
-}
-
-void() Entmod_Command_Mark =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    entmod.markedEntity = entmod.selectedEntity;
-
-    sprint(self,"Entity marked\n");
-}
-
-void() Entmod_Command_UnMark =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    entmod.markedEntity = entmod.selectedEntity;
-
-    sprint(self,"Entity un-marked\n");
-}
-
-void() Entmod_Command_ClearMarked =
-{
-    entmod.markedEntity = world;
-
-    sprint(self,"Cleared marked entities\n");
-}
-
-void() Entmod_Command_GridAlign =
-{
-    local float s2 = Entmod_Get_Command_Argument1();
-
-    if(entmod.gridAligned || !s2) {
-        entmod.gridAligned = 0;
-        sprint(self,"Removed grid alignment\n");
-    }
-    else {
-
-        entmod.gridAligned = s2;
-
-        sprint(self,"Set grid alignment to: ");
-        sprint(self,ftos(entmod.gridAligned));
-        sprint(self,"\n");
-    }
-}
-
-void() Entmod_Command_Set_Effects =
-{
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    entmod.selectedEntity.effects = Entmod_Get_Command_Argument1();
-
-    sprint(self,"Set effects to: ");
-    sprint(self,ftos(entmod.selectedEntity.effects));
-    sprint(self,"\n");
-}
-
-
-
-void() Entmod_Command_Set_BrushModel_Think =
-{
-    setmodel(entmod.selectedEntity,self.netname);
-}
-
-void() Entmod_Command_Set_BrushModel =
-{
-
-
-    if(!entmod.selectedEntity)
-        return Entmod_Error_NoEntitySelected();
-
-    local float modelId = Entmod_Get_Command_Argument1();
-
-    if(!modelId) {
-        sprint(self,"No model set. Set the model number in scratch2\n");
-        return;
-    }
-
-    local string oldnetname = self.netname;
-
-
-    entmod.killOverride = Entmod_Command_Set_BrushModel_Think;
-
-    // Dynamic string
-    localcmd("cl_name *");
-    localcmd(ftos(modelId));
-    localcmd(";name *");
-    localcmd(ftos(modelId));
-    localcmd(";kill\n");
-}
 void() Entmod_HandleCommand =
 {
     // Only the host can do it
@@ -544,37 +322,23 @@ void() Entmod_HandleCommand =
     }
 
     local float scratch = cvar("scratch1");
-    switch(scratch) {
-        default: sprint(self,"Unknown entmod command\n"); break;
-        case 0: Entmod_Command_Deactivate(); break;
-        case 1: Entmod_Command_PrintEntity(); break;
-        case 2: Entmod_Command_Copy(); break;
-        case 3: Entmod_Command_GrabEntity(); break;
-        case 4: Entmod_Command_Rotate(); break;
-        case 5: Entmod_Command_Remove(); break;
-        case 6: Entmod_Command_Set_Alpha(); break;
-        case 7: Entmod_Command_Mark(); break;
-        case 8: Entmod_Command_UnMark(); break;
-        case 9: Entmod_Command_ClearMarked(); break;
-        case 10: Entmod_Command_GridAlign(); break;
-        case 11: Entmod_Command_Set_BrushModel(); break;
-        // case 12: break;
-        case 13: Entmod_Command_Set_Effects(); break;
-    }
 
+    if(!Entmod_HandleCommand_Execute(scratch))
+        sprint(self,"Unknown entmod command\n");
 }
 
 float() Entmod_HandleImpulse =
 {
-    if(self.impulse == 80) {
+    if(self.impulse == ENTMOD_IMPULSE) {
 		Entmod_HandleCommand();
         return FALSE;
     }
 
-
     return TRUE;
 }
 
+
+#include "entmod_commands.qc"
 
 /*
 ===========================
@@ -584,20 +348,7 @@ Hooks into regular mod code
 #pragma warning disable F321
 __accumulate void() worldspawn =
 {
-    localcmd("alias \"entmod\" \"scratch1 0;impulse 80\"\n");
-    localcmd("alias \"ent_print\" \"scratch1 1;impulse 80\"\n");
-    localcmd("alias \"ent_copy\" \"scratch1 2;impulse 80\"\n");
-    localcmd("alias \"ent_move\" \"scratch1 3;impulse 80\"\n");
-    localcmd("alias \"ent_rotate\" \"scratch1 4;impulse 80\"\n");
-    localcmd("alias \"ent_remove\" \"scratch1 5;impulse 80\"\n");
-    localcmd("alias \"ent_set_alpha\" \"scratch1 6;impulse 80\"\n");
-    localcmd("alias \"ent_mark\" \"scratch1 7;impulse 80\"\n");
-    localcmd("alias \"ent_unmark\" \"scratch1 8;impulse 80\"\n");
-    localcmd("alias \"ent_clearmarked\" \"scratch1 9;impulse 80\"\n");
-    localcmd("alias \"ent_gridalign\" \"scratch1 10;impulse 80\"\n");
-    localcmd("alias \"ent_apply_brushmodel\" \"scratch1 11;impulse 80\"\n");
-    //localcmd("alias \"ent_apply_message\" \"scratch1 12;impulse 80\"\n");
-    localcmd("alias \"ent_apply_effects\" \"scratch1 13;impulse 80\"\n");
+    Entmod_CreateAliases();
 
     localcmd("sv_cheats 1\n");
 
@@ -652,3 +403,4 @@ __wrap void() ClientKill =
 
     prior();
 }
+
