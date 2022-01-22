@@ -1,17 +1,52 @@
-# QuakeEnhancedQC
-A QuakeC base intended to be used for modding Quake Enhanced specificaly.
-It attempts to replicate most of the changes that were introduced in Quake Enhanced as well as fix some of the issues that old bases have with the new version.
+# QEEntmod
+A Quake Enhanced mod to manipulate entities. Inspired by the Half-Life metamod plugin 'Entmod'
+Can be used standalone or easily implemented into another mod.
 
-* Originally based off on QuakeC 1.06 source (This is not GPL)
-* Meant to be used with FTEQCC compiler
-* All warnings have been fixed
-* Some utilities related to Quake Enhanced have been added
-* Quake Enhanced specific things like built-ins, flags, packets, etc.. have been added.
+** Note that the mod is very much not polished. Some commands don't work properly and there can be crashes if you don't know what you're doing**
 
-## New Features / Utilities
+## How to use
+* Install the mod as you would any other mod
+* Start a map and type in the console `entmod`
+* Use shotgun weapon to select and move entities
+* Use other commands to do more advanced operations
 
-### Multiplayer mod name
-Quake Enhanced doesn't officially support multiplayer mods, but unofficially it's possible to develop them. However, right now, the only way to show that a lobby is running a mod it's to change the map name.
-For this effect, the base contains a file: `maps.qc` which contains code that will automatically append the mod name to any of the official maps.
 
-If you have any custom map and you want the mod name to apply, you need to register it with this file.
+## Commands
+### entmod
+Activates or disables the mod. Only the host can do it.
+
+### ent_print
+Prints all information about the currently selected entity
+
+### ent_copy
+Creates a func_wall copy of the selected entity **Does not work with all entities**
+
+### ent_move
+Starts or stops moving an entity in relation to the player position.
+
+### ent_rotate
+Rotates an entity in the Y angle.
+
+### ent_remove
+Deletes the currently selected entity.
+
+### ent_set_alpha
+Sets the alpha (specified in `scratch2` cvar) of the currently selected entity. 
+
+### ent_mark
+Marks an entity for bulk operations.
+
+### ent_unmark
+Unmarks an entity for bulk operation.
+
+### ent_clearmarked
+Clears all marked entities
+
+### ent_gridalign
+Sets grid snapping for entities when moving them. Specify the grid units in `scratch2` cvar. Example: `scratch2 8` - Snaps entities every 8 units
+
+### ent_apply_brushmodel
+Sets the model of the currently selected entity to a specific brush model. For example, set it to brush model 5. `scratch2 5` `ent_apply_brushmodel`
+
+### ent_apply_effects
+Sets the effects of the currently selected entity to the value from `scratch2` cvar.
