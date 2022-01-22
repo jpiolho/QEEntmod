@@ -5,7 +5,8 @@ Defs
 */
 enum {
     ENTMOD_MODE_NONE,
-    ENTMOD_MODE_MOVING
+    ENTMOD_MODE_MOVING,
+    ENTMOD_MODE_COPYING
 };
 
 enum {
@@ -40,11 +41,13 @@ typedef struct {
 
     vector moverStartOrigin;
     vector moveeStartOrigin;
+    float moveeDistance;
+
+    entity copyingGhost;
 
     float gridAligned;
 } entmod_t;
 
 entmod_t entmod;
-
 
 .entity entchain;

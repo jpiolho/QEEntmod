@@ -26,17 +26,36 @@ float(float nValue,float nMin,float nMax) Entmod_math_clamp =
     return Entmod_math_max(Entmod_math_min(nValue,nMax),nMin);
 }
 
+string(float mode) Entmod_GetOperationName =
+{
+    switch(mode) {
+        case ENTMOD_MODE_MOVING: return "Moving";
+        case ENTMOD_MODE_COPYING: return "Copying";
+        default: return "Unnamed";
+    }
+}
+
+
+float(entity targetEnt) Entmod_IsEntityBrushModel =
+{
+    local entity e = spawn();
+
+    setmodel(e,"progs/player.mdl"); // This is the first model that's precached after the brushes
+    local float lastBrush = e.modelindex;
+
+    return targetEnt.modelindex < lastBrush;
+}
 
 vector() Entmod_GetEyesPosition =
 {
     return self.origin + '0 0 16';
 }
 
-vector() Entmod_GetAimTargetVector =
+vector(float maxDistance=10000) Entmod_GetAimTargetVector =
 {
     makevectors (self.v_angle);
 
-    return Entmod_GetEyesPosition() + v_forward * 10000;
+    return Entmod_GetEyesPosition() + v_forward * maxDistance;
 }
 
 vector(entity ent) Entmod_GetBoundsCenter =
@@ -67,9 +86,9 @@ entity() Entmod_TraceForward =
     return FALSE;
 }
 
-vector(entity ignored) Entmod_GetAim =
+vector(entity ignored,float maxDistance=10000) Entmod_GetAim =
 {
-    traceline (Entmod_GetEyesPosition() + aim(self,10000) * 2, Entmod_GetAimTargetVector(), FALSE, self);
+    traceline (Entmod_GetEyesPosition() + aim(self,maxDistance) * 2, Entmod_GetAimTargetVector(maxDistance), FALSE, self);
 
     return trace_endpos;
 }
@@ -145,7 +164,7 @@ float() Entmod_PlayerPreThink =
 
 
     // Handle moving mode
-    if(entmod.mode == ENTMOD_MODE_MOVING) {
+    if(entmod.mode == ENTMOD_MODE_MOVING || entmod.mode == ENTMOD_MODE_COPYING) {
         local vector offset = self.origin - entmod.moverStartOrigin;
 
         local vector newOrigin = entmod.moveeStartOrigin + offset;
@@ -174,6 +193,13 @@ float() Entmod_PlayerPostThink =
 
 void() Entmod_Attack_EntitySelect =
 {
+    // Don't let selecting another entity while having another operation in progress
+    if(entmod.mode != ENTMOD_MODE_NONE && entmod.selectedEntity) {
+        sprint(self,Entmod_GetOperationName(entmod.mode));
+        sprint(self," operation in progress\n");
+        return;
+    }
+
     // Effects
     player_shot1 ();
     sound (self, CHAN_WEAPON, "weapons/guncock.wav", 1, ATTN_NORM);
@@ -239,7 +265,7 @@ void() Entmod_PlayerAttack_Think =
     }
 
     if(entmod.attackingMode == ENTMOD_ATTACKINGMODE_DRAG) {
-        local vector offset = Entmod_GetAim(entmod.selectedEntity) - entmod.moverStartOrigin;
+        local vector offset = Entmod_GetAim(entmod.selectedEntity,entmod.moveeDistance) - entmod.moverStartOrigin;
 
         local vector newOrigin = entmod.moveeStartOrigin + offset;
 
@@ -268,6 +294,7 @@ float() Entmod_PlayerAttack =
 
         entmod.moverStartOrigin = Entmod_GetAim(self);
         entmod.moveeStartOrigin = entmod.selectedEntity.origin;
+        entmod.moveeDistance = vlen(self.origin - entmod.moverStartOrigin);
 
         entmod.attackingMode = ENTMOD_ATTACKINGMODE_SELECT;
         entmod.attackTime = time;
@@ -338,6 +365,8 @@ float() Entmod_HandleImpulse =
 }
 
 
+
+#include "entmod_ents.qc"
 #include "entmod_commands.qc"
 
 /*

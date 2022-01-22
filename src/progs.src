@@ -2,6 +2,7 @@
 
 defs.qc
 subs.qc
+entmod/entmod_preextras.qc
 maps.qc
 fight.qc
 ai.qc

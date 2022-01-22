@@ -17,3 +17,9 @@ __wrap float(float cmdId) Entmod_HandleCommand_Execute =\
     return prior(cmdId);\
 }\
 INCREMENT_ENTMOD_COMMAND_ID
+
+
+#define ENTMOD_REGISTER_ENTITY(entityClassname) __accumulate float() Entmod_InitializeEntitySelf =\
+{\
+    if(self.classname == #entityClassname) { entityClassname(); return 1; }\
+}

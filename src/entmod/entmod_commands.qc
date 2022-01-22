@@ -32,19 +32,19 @@ void() Entmod_Command_GrabEntity =
         sprint(self,"Stopped moving entity\n");
     }
     else {
-        sprint(self,"Invalid mode\n");
+        sprint(self,Entmod_GetOperationName(entmod.mode));
+        sprint(self," operation already in progress\n");
     }
 }
 DEFINE_ENTMOD_COMMAND(ent_grab,Entmod_Command_GrabEntity)
 
 
-void() Entmod_Command_Copy =
+void() Entmod_Command_Copy_Brush =
 {
     if(!entmod.selectedEntity)
         return Entmod_Error_NoEntitySelected();
 
-    local string targetClass = entmod.selectedEntity.classname;
-    if(targetClass == "func_wall" || targetClass == "func_plat" || targetClass == "func_door" || targetClass == "func_button" || targetClass == "train")
+    if(entmod.selectedEntity.model != "" && Entmod_IsEntityBrushModel(entmod.selectedEntity))
     {
         local entity newEnt = spawn();
         newEnt.origin = entmod.selectedEntity.origin;
@@ -58,7 +58,79 @@ void() Entmod_Command_Copy =
 
         entmod.selectedEntity = newEnt;
 
-        sprint(self,"Entity copied into func_wall\n");
+        sprint(self,"Brush entity copied into a func_wall (");
+        sprint(self,newEnt.model);
+        sprint(self,")\n");
+    }
+}
+DEFINE_ENTMOD_COMMAND(ent_copybrush,Entmod_Command_Copy_Brush)
+
+
+void() Entmod_Command_Copy =
+{
+    if(!entmod.selectedEntity)
+    return Entmod_Error_NoEntitySelected();
+
+    if(entmod.mode == ENTMOD_MODE_NONE) {
+        entmod.mode = ENTMOD_MODE_COPYING;
+        sprint(self,"Started copying entity\n");
+
+        entmod.moveeStartOrigin = entmod.selectedEntity.origin;
+        entmod.moverStartOrigin = self.origin;
+
+        local entity ghost = spawn();
+        ghost.owner = entmod.selectedEntity;
+        ghost.origin = ghost.owner.origin;
+        setmodel(ghost,ghost.owner.model);
+        ghost.skin = ghost.owner.skin;
+        ghost.solid = SOLID_NOT;
+        ghost.alpha = 0.5;
+        ghost.angles = ghost.owner.angles;
+
+        entmod.selectedEntity = ghost;
+    }
+    else if(entmod.mode == ENTMOD_MODE_COPYING) {
+        entmod.mode = ENTMOD_MODE_NONE;
+
+        local entity ghost = entmod.selectedEntity;
+        local entity original = ghost.owner;
+
+        ghost.alpha = 1;
+        ghost.solid = original.solid;
+        ghost.classname = original.classname;
+        ghost.message = original.message;
+        ghost.spawnflags = original.spawnflags;
+        ghost.target = original.target;
+        ghost.targetname = original.targetname;
+        ghost.lip = original.lip;
+        ghost.wait = original.wait;
+        ghost.angles = original.angles;
+        ghost.mangle = original.mangle;
+        ghost.sounds = original.sounds;
+        ghost.owner = original.owner;
+        ghost.speed = original.speed;
+
+        local entity oself = self;
+        self = ghost;
+
+        if(!Entmod_InitializeEntitySelf()) {
+            self = oself;
+
+            sprint(self,"Stoped copying entity. NOTE: No entity initializer found for: ");
+            sprint(self,ghost.classname);
+            sprint(self,"\n");
+        }
+        else {
+            self = oself;
+
+            sprint(self,"Stopped copying entity.\n");
+        }
+
+        entmod.selectedEntity = ghost;
+    }
+    else {
+        sprint(self,Entmod_GetOperationName(entmod.mode));
+        sprint(self," operation already in progress\n");
     }
 }
 DEFINE_ENTMOD_COMMAND(ent_copy,Entmod_Command_Copy)
